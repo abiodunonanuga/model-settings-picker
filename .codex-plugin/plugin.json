@@ -1,0 +1,12 @@
+{
+  "name": "model-settings-picker",
+  "version": "0.1.1",
+  "description": "OpenAI/Codex settings recommendations with conversational setup.",
+  "skills": "./skills/",
+  "onboardingSkill": "./skills/model-settings-picker/SKILL.md",
+  "interface": {
+    "displayName": "Model Settings Picker",
+    "shortDescription": "Choose suitable settings before substantial work.",
+    "category": "Productivity"
+  }
+}

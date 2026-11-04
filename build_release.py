@@ -1,9 +1,10 @@
-"""Build a source release containing only tracked source and its SHA-256 manifest."""
+"""Build a release from the explicit reviewed file manifest, never a directory scan."""
 import argparse
 import hashlib
 import json
 from pathlib import Path
 import zipfile
+from package_files import RELEASE_FILES, VERSION, source_bytes
 
 ROOT = Path(__file__).resolve().parent
 
@@ -11,18 +12,17 @@ def build(output):
     output = Path(output).resolve()
     if output == ROOT or ROOT in output.parents:
         raise ValueError('Release output must be outside the source tree')
+    files = source_bytes(ROOT, RELEASE_FILES)
     output.mkdir(parents=True, exist_ok=True)
-    files = sorted(p for p in ROOT.rglob('*') if p.is_file() and
-                   not any(x in p.parts for x in ('.git', '__pycache__', '.venv', 'dist')) and p.suffix != '.pyc')
-    manifest = {str(p.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-    archive = output / 'model-settings-picker-0.1.0.zip'
+    manifest = {name: hashlib.sha256(content).hexdigest() for name, content in sorted(files.items())}
+    archive = output / ('model-settings-picker-' + VERSION + '.zip')
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-        for p in files:
-            name = 'model-settings-picker/' + p.relative_to(ROOT).as_posix()
+        for relative, content in sorted(files.items()):
+            name = 'model-settings-picker/' + relative
             info = zipfile.ZipInfo(name, date_time=(2026, 11, 3, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
-            z.writestr(info, p.read_bytes())
+            z.writestr(info, content)
     result = {'archive': archive.name, 'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(), 'files': manifest}
     (output / 'release-manifest.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     return result

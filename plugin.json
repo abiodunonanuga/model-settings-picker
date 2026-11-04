@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "model-settings-picker",
+  "version": "0.1.1",
+  "description": "OpenAI/Codex settings recommendations with conversational setup and configurable preflight behavior.",
+  "license": "MIT",
+  "repository": "https://github.com/abiodunonanuga/model-settings-picker",
+  "extensions": {
+    "com.openai": {
+      "hooks": "./hooks/hooks.json",
+      "onboardingSkill": "./skills/model-settings-picker/SKILL.md",
+      "interface": {
+        "displayName": "Model Settings Picker",
+        "shortDescription": "Choose suitable settings before substantial work.",
+        "category": "Productivity",
+        "defaultPrompt": ["Set up Model Settings Picker."]
+      }
+    }
+  }
+}
