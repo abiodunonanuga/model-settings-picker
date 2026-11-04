@@ -11,9 +11,9 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+from package_files import INSTALL_FILES, VERSION, source_bytes
 
 ROOT = Path(__file__).resolve().parent
-VERSION = '0.1.0'
 OWNER = 'model-settings-picker'
 # Suggested answers only. Absence of a saved configuration means inactive.
 SUGGESTED = {
@@ -259,19 +259,19 @@ def install(target):
             raise ValueError('Customized owned file; no changes made: ' + rel)
     if (target / OWNER / 'config.json').exists():
         config(target / OWNER)
-    sources = [p for p in ROOT.rglob('*') if p.is_file() and
-               not any(x in p.parts for x in ('.git', '__pycache__', 'tests', '.github')) and p.suffix != '.pyc']
+    sources = source_bytes(ROOT, INSTALL_FILES)
     files = {}
-    for source in sources:
-        out = dest / source.relative_to(ROOT)
+    for relative, content in sources.items():
+        out = dest / relative
         out.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, out)
+        out.write_bytes(content)
         files[str(out.relative_to(target))] = digest(out)
-    for source in (ROOT / 'skills' / OWNER).rglob('*'):
-        if source.is_file():
-            out = skill / source.relative_to(ROOT / 'skills' / OWNER)
+    skill_prefix = 'skills/' + OWNER + '/'
+    for relative, content in sources.items():
+        if relative.startswith(skill_prefix):
+            out = skill / relative[len(skill_prefix):]
             out.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, out)
+            out.write_bytes(content)
             files[str(out.relative_to(target))] = digest(out)
     # Absolute verified interpreter, no PATH alias dependency; all paths quoted.
     cmd = '"' + sys.executable + '" "' + str(dest / 'picker.py') + '" hook --data "' + str(target / OWNER) + '"'
@@ -288,6 +288,12 @@ def install(target):
     if hp.exists():
         shutil.copyfile(hp, target / OWNER / ('hooks-backup-' + datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f') + '.json'))
     write(hp, hooks)
+    # Retire obsolete owned package files only after the replacement is ready.
+    # Their hashes were checked above; preserve all unowned/local runtime state.
+    for relative, sha in owned.get('files', {}).items():
+        previous = target / relative
+        if relative not in files and previous.is_file() and digest(previous) == sha:
+            previous.unlink()
     write(marker, {'version': VERSION, 'files': files, 'command': cmd})
     return {'installed': str(dest), 'configured': (target / OWNER / 'config.json').exists(),
             'next': 'Review/trust hooks in Codex, then start a new chat and ask Set up Model Settings Picker.'}
