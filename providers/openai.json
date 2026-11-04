@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "provider": "openai",
+  "catalog_revision": "2026-11-03",
+  "notice": "Starter routing heuristics, not measured rankings or account entitlements. Intersect with host-exposed availability. Update this provider file when models change; do not relabel observed legacy settings.",
+  "efforts": ["low", "medium", "high", "xhigh", "max", "ultra"],
+  "models": {
+    "gpt-6-luna": {"efforts": ["low", "medium", "high", "xhigh", "max"], "fit": "Focused repeatable work with explicit rules; increase effort for consequential exceptions."},
+    "gpt-6.1-sol": {"efforts": ["low", "medium", "high", "xhigh", "max", "ultra"], "fit": "Implementation, debugging, automation and coordinated production; match effort to interacting risks and validation depth."},
+    "gpt-6.1-terra": {"efforts": ["low", "medium", "high", "xhigh", "max", "ultra"], "fit": "Visual grounding, application interaction, precise writing and editorial fidelity; match effort to ambiguity and costly details."},
+    "gpt-6-astra": {"efforts": ["low", "medium", "high", "xhigh", "max", "ultra"], "fit": "Cross-domain synthesis, difficult ambiguity and tightly integrated reasoning; match effort to reconciliation and defensibility."}
+  },
+  "effort_guidance": {
+    "low": "Explicit bounded instructions, reliable tools, minimal ambiguity.",
+    "medium": "Structured multi-step work, predictable exceptions, moderate judgment.",
+    "high": "Substantial production, implementation or synthesis with meaningful validation.",
+    "xhigh": "Difficult ambiguity, interacting constraints or expensive mistakes.",
+    "max": "Hardest tightly coupled work needing deep reasoning and costly reconciliation.",
+    "ultra": "Divisible orchestration, only when the host supports it and delegation is authorized. Not a stronger single-worker mode."
+  }
+}
