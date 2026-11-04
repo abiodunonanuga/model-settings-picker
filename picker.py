@@ -3,7 +3,6 @@
 from __future__ import annotations
 import argparse
 import copy
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -11,7 +10,7 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
-from package_files import INSTALL_FILES, VERSION, source_bytes
+from package_files import PLUGIN_FILES, VERSION, source_bytes
 
 ROOT = Path(__file__).resolve().parent
 OWNER = 'model-settings-picker'
@@ -43,10 +42,10 @@ def write(path, value):
             os.unlink(name)
 
 def home():
-    return Path(os.environ.get('CODEX_HOME', str(Path.home() / '.codex')))
+    return Path(os.environ['CODEX_HOME']) if os.environ.get('CODEX_HOME') else Path.home() / '.codex'
 
 def data_root():
-    return Path(os.environ.get('MODEL_SETTINGS_PICKER_HOME', str(home() / OWNER)))
+    return Path(os.environ['MODEL_SETTINGS_PICKER_HOME']) if os.environ.get('MODEL_SETTINGS_PICKER_HOME') else home() / OWNER
 
 def catalog():
     return read(ROOT / 'providers' / 'openai.json')
@@ -236,67 +235,22 @@ def doctor(root):
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
-def install(target):
-    target = Path(target).resolve()
-    dest, skill = target / OWNER / 'package', target / 'skills' / OWNER
-    marker = target / OWNER / 'install.json'
-    owned = read(marker, {})
-    hp = target / 'hooks.json'
-    hooks = read(hp, {'hooks': {}})
-    if not isinstance(hooks.get('hooks'), dict):
-        raise ValueError('Unsupported hooks.json shape')
-    host_config = (target / 'config.toml').read_text(encoding='utf-8-sig') if (target / 'config.toml').exists() else ''
-    existing = (json.dumps(hooks) + host_config).lower()
-    if any(x in existing for x in ('settings_preflight', 'settings-preflight')):
-        raise ValueError('Existing preflight detected; use a separate Codex home')
-    if (dest.exists() or skill.exists() or OWNER in json.dumps(hooks)) and not owned:
-        raise ValueError('Unowned picker files or hooks exist')
-    for rel, sha in owned.get('files', {}).items():
-        p = (target / rel).resolve()
-        if target not in p.parents:
-            raise ValueError('Unsafe installation manifest')
-        if p.exists() and digest(p) != sha:
-            raise ValueError('Customized owned file; no changes made: ' + rel)
-    if (target / OWNER / 'config.json').exists():
-        config(target / OWNER)
-    sources = source_bytes(ROOT, INSTALL_FILES)
-    files = {}
+def stage_plugin(output):
+    """Prepare an allowlisted marketplace for native Codex installation."""
+    target = Path(output).resolve()
+    if target == ROOT or ROOT in target.parents:
+        raise ValueError('Stage outside the source tree')
+    if target.exists():
+        raise ValueError('Choose a new staging directory; existing files are preserved')
+    sources = source_bytes(ROOT, PLUGIN_FILES)
+    target.mkdir(parents=True)
     for relative, content in sources.items():
-        out = dest / relative
+        out = target / relative
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_bytes(content)
-        files[str(out.relative_to(target))] = digest(out)
-    skill_prefix = 'skills/' + OWNER + '/'
-    for relative, content in sources.items():
-        if relative.startswith(skill_prefix):
-            out = skill / relative[len(skill_prefix):]
-            out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_bytes(content)
-            files[str(out.relative_to(target))] = digest(out)
-    # Absolute verified interpreter, no PATH alias dependency; all paths quoted.
-    cmd = '"' + sys.executable + '" "' + str(dest / 'picker.py') + '" hook --data "' + str(target / OWNER) + '"'
-    for event in ('UserPromptSubmit', 'Stop'):
-        groups = hooks['hooks'].get(event, [])
-        kept = []
-        for group in groups:
-            remaining = [h for h in group.get('hooks', []) if h.get('command') != owned.get('command')]
-            if remaining or not group.get('hooks'):
-                kept.append({**group, 'hooks': remaining})
-        groups = kept
-        groups.append({'hooks': [{'type': 'command', 'command': cmd, 'timeout': 15}]})
-        hooks['hooks'][event] = groups
-    if hp.exists():
-        shutil.copyfile(hp, target / OWNER / ('hooks-backup-' + datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f') + '.json'))
-    write(hp, hooks)
-    # Retire obsolete owned package files only after the replacement is ready.
-    # Their hashes were checked above; preserve all unowned/local runtime state.
-    for relative, sha in owned.get('files', {}).items():
-        previous = target / relative
-        if relative not in files and previous.is_file() and digest(previous) == sha:
-            previous.unlink()
-    write(marker, {'version': VERSION, 'files': files, 'command': cmd})
-    return {'installed': str(dest), 'configured': (target / OWNER / 'config.json').exists(),
-            'next': 'Review/trust hooks in Codex, then start a new chat and ask Set up Model Settings Picker.'}
+    return {'marketplace_root': str(target), 'version': VERSION,
+            'next': 'Add this marketplace through Codex plugin controls and install model-settings-picker@model-settings-picker. Global hooks/skills are not edited.'}
+
 
 def uninstall(target):
     target = Path(target).resolve()
@@ -333,9 +287,9 @@ def uninstall(target):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('command', choices=['doctor', 'config-template', 'configure', 'profiles', 'hook', 'decide',
-                   'acknowledge', 'continue-task', 'begin-new', 'status', 'launch-plan', 'install', 'uninstall', 'reset-sessions'])
+                   'acknowledge', 'continue-task', 'begin-new', 'status', 'launch-plan', 'stage-plugin', 'uninstall-legacy', 'reset-sessions'])
     p.add_argument('--data', default=str(data_root()))
-    for flag in ('file', 'session', 'turn', 'intent', 'home'):
+    for flag in ('file', 'session', 'turn', 'intent', 'home', 'output'):
         p.add_argument('--' + flag)
     a = p.parse_args(argv)
     try:
@@ -376,10 +330,14 @@ def main(argv=None):
                 f.unlink()
                 count += 1
             result = {'deleted_session_records': count}
+        elif a.command == 'stage-plugin':
+            if not a.output:
+                raise ValueError('--output must name a new directory outside source')
+            result = stage_plugin(a.output)
         else:
             if not a.home:
                 raise ValueError('--home must explicitly name the target Codex home')
-            result = install(a.home) if a.command == 'install' else uninstall(a.home)
+            result = uninstall(a.home)
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except (ValueError, KeyError, TypeError, OSError) as error:

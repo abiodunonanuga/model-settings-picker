@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{
+      "type": "command",
+      "command": "sh \"${PLUGIN_ROOT}/hooks/run-hook.sh\"",
+      "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$env:PLUGIN_ROOT\\hooks\\run-hook.ps1\"",
+      "timeout": 15,
+      "statusMessage": "Checking settings fit"
+    }]}],
+    "Stop": [{"hooks": [{
+      "type": "command",
+      "command": "sh \"${PLUGIN_ROOT}/hooks/run-hook.sh\"",
+      "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$env:PLUGIN_ROOT\\hooks\\run-hook.ps1\"",
+      "timeout": 15
+    }]}]
+  }
+}

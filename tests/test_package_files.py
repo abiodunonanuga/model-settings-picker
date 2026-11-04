@@ -50,38 +50,13 @@ class PackageBoundaryTests(unittest.TestCase):
             self.assertTrue(all(self.sentinel.encode() not in archive.read(n) for n in archive.namelist()))
         self.assertEqual(set(result['files']), set(package_files.RELEASE_FILES))
 
-    def test_install_uses_exact_runtime_manifest_not_extras(self):
-        self.extras()
-        target = self.base / 'target'
-        with patch.object(picker, 'ROOT', self.source):
-            picker.install(target)
-        package = target / picker.OWNER / 'package'
-        names = {p.relative_to(package).as_posix() for p in package.rglob('*') if p.is_file()}
-        self.assertEqual(names, set(package_files.INSTALL_FILES))
-        skill = target / 'skills' / picker.OWNER
-        self.assertEqual({p.name for p in skill.iterdir()}, {'SKILL.md'})
-        self.assertNotIn(self.sentinel, json.dumps(picker.read(target / picker.OWNER / 'install.json')))
 
     def test_manifest_contains_only_expected_unique_paths(self):
-        for manifest in (package_files.INSTALL_FILES, package_files.RELEASE_FILES):
+        for manifest in (package_files.PLUGIN_FILES, package_files.RELEASE_FILES):
             self.assertEqual(len(manifest), len(set(manifest)))
             self.assertFalse(any(Path(n).name.startswith('.env') for n in manifest))
-        self.assertTrue(set(package_files.INSTALL_FILES) <= set(package_files.RELEASE_FILES))
+        self.assertTrue(set(package_files.PLUGIN_FILES) <= set(package_files.RELEASE_FILES))
 
-    def test_upgrade_retires_old_owned_builder_and_preserves_preferences(self):
-        target = self.base / 'target'
-        with patch.object(picker, 'ROOT', self.source):
-            picker.install(target)
-            old_builder = target / picker.OWNER / 'package' / 'build_release.py'
-            old_builder.write_text('legacy recursive builder')
-            marker = target / picker.OWNER / 'install.json'
-            owned = picker.read(marker)
-            owned['files'][str(old_builder.relative_to(target))] = picker.digest(old_builder)
-            picker.write(marker, owned)
-            picker.write(target / picker.OWNER / 'config.json', picker.SUGGESTED)
-            picker.install(target)
-        self.assertFalse(old_builder.exists())
-        self.assertEqual(picker.read(target / picker.OWNER / 'config.json'), picker.SUGGESTED)
 
     def test_missing_required_file_stops_before_release_or_install_writes(self):
         (self.source / 'providers/openai.json').unlink()
@@ -89,7 +64,7 @@ class PackageBoundaryTests(unittest.TestCase):
         with patch.object(build_release, 'ROOT', self.source), self.assertRaises(OSError):
             build_release.build(output)
         with patch.object(picker, 'ROOT', self.source), self.assertRaises(OSError):
-            picker.install(target)
+            picker.stage_plugin(target)
         self.assertFalse(output.exists())
         self.assertFalse(target.exists())
 
@@ -107,7 +82,7 @@ class PackageBoundaryTests(unittest.TestCase):
         with patch.object(build_release, 'ROOT', self.source), self.assertRaises(ValueError):
             build_release.build(self.base / 'release')
         with patch.object(picker, 'ROOT', self.source), self.assertRaises(ValueError):
-            picker.install(self.base / 'target')
+            picker.stage_plugin(self.base / 'target')
         self.assertFalse((self.base / 'release').exists())
         self.assertFalse((self.base / 'target').exists())
 
@@ -116,7 +91,7 @@ class PackageBoundaryTests(unittest.TestCase):
         shutil.move(str(self.source / 'policies'), external)
         self.link(external, self.source / 'policies', directory=True)
         with self.assertRaises(ValueError):
-            package_files.source_bytes(self.source, package_files.INSTALL_FILES)
+            package_files.source_bytes(self.source, package_files.PLUGIN_FILES)
 
     def test_unlisted_symlink_is_never_followed(self):
         private = self.base / 'private.txt'
@@ -138,7 +113,7 @@ class PackageBoundaryTests(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         with self.assertRaises(ValueError):
-            package_files.source_bytes(self.source, package_files.INSTALL_FILES)
+            package_files.source_bytes(self.source, package_files.PLUGIN_FILES)
 
     def test_unsafe_manifest_paths_rejected(self):
         for name in ('../private.txt', '/private.txt', 'C:/private.txt', 'nested\\private.txt'):

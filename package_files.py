@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 import stat
 
 VERSION = '0.1.1'
-INSTALL_FILES = (
+PLUGIN_FILES = (
     'LICENSE',
     'README.md',
     'INSTALL.md',
@@ -16,24 +16,31 @@ INSTALL_FILES = (
     'policies/runtime.md',
     'providers/openai.json',
     'skills/model-settings-picker/SKILL.md',
+    'plugin.json',
+    '.codex-plugin/plugin.json',
+    '.agents/plugins/marketplace.json',
+    'hooks/hooks.json',
+    'hooks/run-hook.sh',
+    'hooks/run-hook.ps1',
 )
-RELEASE_FILES = INSTALL_FILES + (
+RELEASE_FILES = PLUGIN_FILES + (
     '.gitattributes',
     '.gitignore',
     '.github/workflows/test.yml',
     'build_release.py',
     'tests/test_picker.py',
     'tests/test_package_files.py',
+    'tests/test_native_plugin.py',
 )
 
 
 def source_bytes(root, names):
     """Snapshot only explicitly named regular files; reject links before reading.
 
-Validate the entire selected set before any consumer writes output. Check every
-component so a linked parent directory cannot bypass a leaf-only symlink check.
-Windows junctions/reparse points are rejected, including on Python 3.10.
-"""
+    Validate the entire selected set before any consumer writes output. Check every
+    component so a linked parent directory cannot bypass a leaf-only symlink check.
+    Windows junctions/reparse points are rejected, including on Python 3.10.
+    """
     root = Path(root).resolve(strict=True)
     result = {}
     for name in names:

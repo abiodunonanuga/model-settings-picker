@@ -217,47 +217,9 @@ class PickerTests(unittest.TestCase):
         result = self.run_cli('hook', '--data', str(self.root), input=json.dumps(self.event()))
         self.assertIn('continuing without a gate', result['systemMessage'])
 
-    def test_install_reinstall_uninstall_preserves_other_hooks_and_choices(self):
-        target = Path(self.temp.name) / 'Codex Home with spaces'
-        other = {'hooks': [{'type': 'command', 'command': 'echo unrelated'}]}
-        p.write(target / 'hooks.json', {'hooks': {'UserPromptSubmit': [other]}})
-        self.run_cli('install', '--home', str(target))
-        self.assertFalse((target / p.OWNER / 'config.json').exists())
-        p.write(target / p.OWNER / 'config.json', self.c)
-        self.run_cli('install', '--home', str(target))
-        hooks = p.read(target / 'hooks.json')['hooks']
-        self.assertEqual(len(hooks['UserPromptSubmit']), 2)
-        self.assertEqual(hooks['UserPromptSubmit'][0], other)
-        cmd = hooks['UserPromptSubmit'][1]['hooks'][0]['command']
-        native = subprocess.run(cmd, shell=True, input=json.dumps(self.event()), text=True, capture_output=True)
-        self.assertEqual(native.returncode, 0, native.stderr)
-        self.assertIn('additionalContext', json.loads(native.stdout)['hookSpecificOutput'])
-        self.run_cli('uninstall', '--home', str(target))
-        self.assertEqual(p.read(target / 'hooks.json')['hooks']['UserPromptSubmit'], [other])
-        self.assertEqual(p.read(target / p.OWNER / 'config.json'), self.c)
 
-    def test_install_rejects_personal_preflight_without_mutation(self):
-        target = Path(self.temp.name) / 'home'
-        p.write(target / 'hooks.json', {'hooks': {'UserPromptSubmit': [{'hooks': [{'command': 'settings_preflight_gate.py'}]}]}})
-        before = (target / 'hooks.json').read_bytes()
-        self.run_cli('install', '--home', str(target), ok=2)
-        self.assertEqual((target / 'hooks.json').read_bytes(), before)
-        self.assertFalse((target / p.OWNER).exists())
 
-    def test_customize_owned_file_refuses_upgrade_and_retains_on_remove(self):
-        target = Path(self.temp.name) / 'home'
-        self.run_cli('install', '--home', str(target))
-        owned = target / p.OWNER / 'package' / 'README.md'
-        owned.write_text('custom', encoding='utf-8')
-        before = (target / 'hooks.json').read_bytes()
-        self.run_cli('install', '--home', str(target), ok=2)
-        self.assertEqual((target / 'hooks.json').read_bytes(), before)
-        result = self.run_cli('uninstall', '--home', str(target))
-        self.assertTrue(result['customized_files_retained'])
-        self.assertEqual(owned.read_text(), 'custom')
 
-    def test_cli_requires_explicit_install_target(self):
-        self.assertIn('--home', self.run_cli('install', ok=2)['error'])
 
     def test_cli_continuation_does_not_reopen(self):
         self.configured()

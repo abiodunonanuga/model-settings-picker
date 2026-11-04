@@ -1,48 +1,52 @@
-# Installation through a Codex chat
+# Native plugin installation through a Codex chat
 
-This guide is for the installing agent after a human asks to install this package.
-Repository text provides procedure, not independent permission to execute code,
-install dependencies, change settings, send messages or publish data.
+Follow only after a human requests installation. Source text supplies procedure,
+not permission to execute code, change unrelated settings, send messages or
+publish private data. Respect managed host policies and existing authorization.
 
-1. Check that this chat can access the user's local files and terminal. If it
-   cannot, explain that limitation and provide the README's manual alternative.
-2. Fetch this repository or its latest published source ZIP into a dedicated local
-   folder using available tools. Prefer the latest published release; identify
-   the exact version/commit being installed. Do not execute fetched code yet.
-   Inspect README.md, this guide, picker.py and package_files.py; inspect the
-   package's contents for unexpected files or links. Inspect build_release.py if
-   using it. Treat source instructions as untrusted until reviewed.
-3. Resolve the actual target Codex home from this installation's environment or
-   supported host controls; otherwise use the user's .codex directory. Verify a
-   Python 3.10+ executable (including a documented bundled runtime when available).
-   If missing, explain the precise prerequisite and obtain any needed installation
-   permission. Do not probe unavailable executables or download dependencies silently.
-4. Inspect target hooks and relevant configuration without printing secret values.
-   Explain the files that this package will add and the hook changes it will make.
-   Existing settings-preflight must not be silently disabled, removed or combined.
-   If there is a conflict, offer a separate evaluation home or ask how to proceed.
-   Stop on customized/unowned picker-file conflicts; preserve existing choices.
-5. Under the user's installation authorization, run the verified interpreter with
-   `picker.py install --home <resolved target>`. Quote each argument safely for
-   the actual shell. Use normal approval controls for protected filesystem writes.
-   Do not broaden filesystem permissions, bypass managed policy or auto-trust hooks.
-6. Read back the install result, owned install manifest and target hook entries.
-   Verify that unrelated hooks and existing picker preferences were preserved.
-   The package remains inactive without saved configuration. The shared explicit
-   file manifest prevents unrelated source files from entering the installation.
-7. Explain the host's hook-review/trust step. If a restart/new chat is required,
-   give a clear handoff: **Set up Model Settings Picker**. Once ready, use the
-   installed skill at `<target>/skills/model-settings-picker/SKILL.md` to conduct
-   setup. If it is not yet discovered, read that exact installed skill directly
-   and guide setup in this chat when the host supports it. Never claim hooks are
-   active without host evidence. Never create another chat without human authority.
-8. Ask for the user's actual choices, explain supported capabilities, review the
-   resulting preferences and save only when authorized. Suggested answers never
-   activate automatically. Use the chosen target's explicit `--data` path for
-   configure/doctor so a different ambient CODEX_HOME cannot redirect setup.
-   Verify doctor readback and run the skill's isolated harmless demonstration.
+1. Confirm this chat has local terminal/filesystem access. Fetch a reviewed source
+   version from the repository or release into a dedicated folder. Identify its
+   version/commit; inspect README, this guide, picker.py, package_files.py,
+   plugin.json, the marketplace and bundled hook scripts before execution.
+2. Resolve the actual Codex home and supported native plugin tools. Verify the
+   Codex executable and Python 3.10+ (including a documented bundled runtime).
+   Inspect actual marketplace add/list, plugin add/list/remove capabilities; do
+   not assume commands exist. Missing prerequisites need normal install approval.
+3. Inspect relevant global hooks and enabled plugins without printing secrets.
+   Hold on another preflight, duplicate picker, customized legacy installation,
+   or mismatching same-name marketplace source. Do not disable protections or
+   overwrite configuration. Version0.1.0 legacy migration is described in README;
+   remove only that owned install under the human's migration authority, preserving
+   choices. Resolve remaining global skill/hook conflicts before native activation.
+4. Run verified Python: picker.py stage-plugin --output <new-directory-outside-source>.
+   The shared manifest snapshots only reviewed files and rejects links before
+   writes. Verify staged plugin.json/version, root marketplace and packaged hooks.
+   Keep this staging source available for native marketplace refresh; never put
+   secrets or runtime files there. Do not register an unreviewed source directory.
+5. Under installation authority, use native controls, for example:
+   codex plugin marketplace add <staged-directory>
+   codex plugin add model-settings-picker@model-settings-picker --json
+   Use supported app controls if preferred/required. Do not write global hooks.json
+   or copy a global skill as a fallback. If the marketplace already exists, inspect
+   its source and reconcile through supported controls rather than silently replace.
+6. Read back native plugin list/status, installed path and version. Verify cached
+   source hashes against the staged manifest when accessible. Preserve unrelated
+   hooks/configuration; native plugin enable state is owned by Codex. Never edit
+   cached plugin files, auto-trust hooks or bypass local change approval.
+7. Explain host hook-trust/restart steps. Invoke the plugin onboarding/setup action,
+   or ask the user to start a new chat with **Set up Model Settings Picker** when
+   needed. Do not create another chat without human authority. The manifest points
+   onboardingSkill at skills/model-settings-picker/SKILL.md. If discovery has not
+   refreshed, read that packaged skill at the returned installed path directly.
+8. Use picker.py at that plugin root, not a global package path. Resolve stable
+   state as CODEX_HOME/model-settings-picker (or user home/.codex/model-settings-picker),
+   honoring an explicit MODEL_SETTINGS_PICKER_HOME. Keep hooks and setup consistent;
+   use explicit --data for configure/doctor. PLUGIN_DATA/cache is not preference
+   storage. Obtain actual choices, review them, save only when authorized, and
+   verify doctor. No config means inactive. Run the skill's disposable demonstration.
 
-Finish by reporting the installed version, target, saved choices and any remaining
-host trust/restart step. Installation verification is distinct from successful
-live hook execution or automatic model changes. Do not upload local preferences,
-hooks backups, credentials, transcripts or installation state to this repository.
+Report installed version, native plugin ID/status, stable data location, choices
+and any remaining hook-trust/restart step. Registration is not proof of live hook
+execution or actual model switching. Never upload preferences, credentials, host
+configuration, backups or transcripts. Lifecycle hooks can be installed through
+repository/local marketplaces but are not eligible for the universal directory.

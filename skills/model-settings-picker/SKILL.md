@@ -10,11 +10,13 @@ alone activates no preferences. Suggested answers are choices to explain, never
 silent consent. Batch a few related questions; accept ordinary language. Preserve
 existing choices during reconfiguration unless the user changes them.
 
-Resolve the installed CLI at `$CODEX_HOME/model-settings-picker/package/picker.py`,
-or `~/.codex/model-settings-picker/package/picker.py` when CODEX_HOME is unset.
-For a source checkout, use its root picker.py. Verify Python 3.10+ is executable;
-the installer uses the verified interpreter's absolute path. Run `doctor` first.
-Use explicit `--data <chosen storage directory>` consistently if configured.
+Resolve the native plugin root from this packaged SKILL.md: the root is two
+parent directories above this skill directory (skills/model-settings-picker).
+Use picker.py in that root; do not use a versioned cache path from an earlier
+installation or the legacy global package path. Verify Python 3.10+ is executable.
+Run doctor first. Store preferences outside cache at CODEX_HOME/model-settings-picker
+(or ~/.codex/model-settings-picker), honoring MODEL_SETTINGS_PICKER_HOME/--data.
+PLUGIN_DATA is not used for preferences. Keep the hook and setup data paths consistent.
 
 ## Guided setup
 
